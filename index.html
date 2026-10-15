@@ -100,10 +100,17 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
-/* ===================== CONFIGURAÇÃO (preencher) ===================== */
+/* ===================== CONFIGURAÇÃO ===================== */
+// Mesmo projeto, mesma chave pública e mesma "storageKey" do portal e do Hub (é assim que o login é compartilhado).
 const SUPABASE_URL = 'https://umpctnchhmyvpjwxllaj.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtcGN0bmNoaG15dnBqd3hsbGFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMTI3MjAsImV4cCI6MjA4OTU4ODcyMH0.UnKDiQVtVGleKwPv1OK9AeeObM1LGjcDvvmmiyX4_iI';
-const PORTAL_URL = 'https://tkichelewski-web.github.io/portal-ip/';   // link do Portal Índice de Prevenção SSMA (onde o login é feito)
+const SUPABASE_ANON_KEY = 'sb_publishable_lxiF04jATB1HMLINX-FvOg_3JOjXxrQ';
+const STORAGE_KEY = 'sistema-ip-auth';
+const PORTAL_URL = 'https://tkichelewski-web.github.io/portal-ip/';
+const ORIGEM_OK = 'https://tkichelewski-web.github.io/';
+function linkPortal() {
+  const aqui = location.href.split('#')[0];
+  return PORTAL_URL + (aqui.startsWith(ORIGEM_OK) ? '?voltar=' + encodeURIComponent(aqui) : '');
+}
 
 /* ===================== BASE ===================== */
 const STATUS = {
@@ -143,11 +150,17 @@ async function iniciar() {
     app.innerHTML = '<div class="cartao"><h2>Configuração pendente</h2><p>Preencha <b>SUPABASE_URL</b> e <b>SUPABASE_ANON_KEY</b> no início do script deste arquivo.</p></div>';
     return;
   }
-  S.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+  if (location.protocol === 'file:') {
+    app.innerHTML = `<div class="cartao"><h2>Abra pelo endereço publicado</h2>
+      <p>Esta tela foi aberta como arquivo do computador, e assim ela não enxerga o login do portal.</p>
+      <p>Publique no GitHub Pages e abra por <b>${esc(ORIGEM_OK)}plano-de-acao/</b>.</p></div>`;
+    return;
+  }
+  S.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: STORAGE_KEY } });
   const { data } = await S.sb.auth.getSession();
   if (!data || !data.session) {
-    app.innerHTML = `<div class="cartao"><h2>Plano de Ação</h2><p>Para entrar, faça o login pelo portal e volte para esta tela.</p>
-      ${PORTAL_URL ? `<p><a class="btn p" style="text-decoration:none;display:inline-block" href="${esc(PORTAL_URL)}">Ir para o portal</a></p>` : ''}</div>`;
+    app.innerHTML = `<div class="cartao"><h2>Plano de Ação</h2><p>Para entrar, faça o login pelo portal. Depois do login, você volta para esta tela.</p>
+      <p><a class="btn p" style="text-decoration:none;display:inline-block" href="${esc(linkPortal())}">Ir para o portal</a></p></div>`;
     return;
   }
   const email = (data.session.user.email || '').toLowerCase();
@@ -212,7 +225,7 @@ function desenhar() {
     <div><h1>Plano de Ação</h1><div class="sub">Hub SSMA · acompanhamento de ações, evidências e aprovação</div></div>
     <div class="espaco"></div>
     <div class="usuario"><span>${esc(S.perfil.nome || S.perfil.email)}</span><span class="papel">${ehAdmin() ? 'SSMA' : 'Gerente'}</span>
-      ${PORTAL_URL ? `<a href="${esc(PORTAL_URL)}">Portal</a>` : ''}</div>
+      <a href="${esc(PORTAL_URL)}">Portal</a></div>
   </div>
   <div class="wrap">
     <div class="abas">
